@@ -1,6 +1,6 @@
 # Specify filepatterns you want git to ignore.
 
-micropython_root/boot.py
+
 *.sublime-*
 .swp
 OldVersions/
