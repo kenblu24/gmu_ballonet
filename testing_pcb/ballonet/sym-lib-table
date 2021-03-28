@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name adafruit-breakouts)(type Legacy)(uri ${KIPRJMOD}/adafruit-breakouts.lib)(options "")(descr ""))
+  (lib (name ballonet_esp32_proto-rescue)(type Legacy)(uri ${KIPRJMOD}/ballonet_esp32_proto-rescue.lib)(options "")(descr ""))
+)

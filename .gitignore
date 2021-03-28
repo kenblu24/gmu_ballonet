@@ -1,0 +1,12 @@
+# Specify filepatterns you want git to ignore.
+
+micropython_root/boot.py
+*.sublime-*
+.swp
+OldVersions/
+TERATERM.INI
+__pycache__/
+
+terminal_log-20201222
+test.py
+log1*

@@ -24,7 +24,7 @@ class height_lidar:
 
 
 def main():
-    global read
+    global read  # make function global
     global this
     from machine import Pin, I2C
     import adxl345
@@ -35,7 +35,7 @@ def main():
     a = accelerometer.accelerometer(adxl, 'adxl345_calibration_2point')
     lidar = VL53L0X.VL53L0X(i2c, 41)
     this = height_lidar(a, lidar)
-    read = this.read
+    read = this.read  # make function callable (so we can call distance.read() )
 
 
 if __name__ == "__main__":
