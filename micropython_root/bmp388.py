@@ -1,106 +1,124 @@
+"""
+Authors: Kevin Eckert
+
+Use this class to configure a BMP 388 Sensor in micropython
+It takes a bare minimum approach, to do only what is necessary
+to get the highest resolution relative altitude measurements.
+
+"""
+
 from machine import Pin, I2C
 from time import sleep
+from micropython import const#I don't think I need this
+from struct import unpack
+
+#Create BMP388 ID and ADDRESS.
+#Note that the SDO pin can be changed, so the address can change during operation if desired.
+_BMP388_ID = const(0x50)
+_BMP388_ADDRESS = 0x77#0x76 if SDO is connected to ground, else 0x77
+_DEFAULT_SAMPLING = b'\x0D'#0000 1101--32x pressure sampling, 2x temp sampling
+_SEA_LEVEL = 1013.25
+_FORCE_MEASURE = b'\x13'
+_RDY = const(0x60)
+#REGISTERS
+_REG_ID = const(0x00)
+_REG_ERROR = const(0x02)
+_REG_STATUS = const(0x03)
+_REG_PRESSUREDATA = const(0x04)#pressure data contained on registers x04-06
+_REG_TEMPDATA = const(0x07)#temp data on reg x07-09
+_REG_SENSORTIME = const(0x0C)#from xC-xE 
+_REG_EVENT = const(0x10)
+_REG_INT_STATUS = const(0x11)
+_REG_FIFO_LENGTH = const(0x12)#x12 - x13
+_REG_FIFO_DATA = const(0x14)
+_REG_FIFO_WATERMARK = const(0x15)#x15-x16
+_REG_FIFO_CONFIG_1 = const(0x17)
+_REG_FIFO_CONFIG_2 = const(0x18)
+_REG_INT_CTRL = const(0x19)
+_REG_IF_CONF = const(0x1A)
+_REG_CONTROL = const(0x1B)
+_REG_OSR = const(0x1C)
+_REG_ODR = const(0x1D)
+_REG_CONFIG = const(0x1F)
+_REG_CAL_DATA = const(0x31)#calibration data actually starts at 0x30, however only 0x31-0x45 are used
+_REG_CMD = const(0x7E)
 
 
-i2c = I2C(scl=Pin(22), sda=Pin(21))  # must specify pins for some reason
 
-ADDRESS = 118  # 0h76 = 118. Default I2C address of BMP388
+def make_i2c(scl_pin=22, sda_pin=21):
+	i2c = I2C(0, scl=Pin(scl_pin), sda=Pin(sda_pin))
+	return i2c
+	
+def set_oversampling(i2c, sampling=_DEFAULT_SAMPLING):
+	i2c.writeto_mem(_BMP388_ADDRESS, _REG_OSR, sampling)
+	if i2c.readfrom_mem(_BMP388_ADDRESS, _REG_OSR, 1) != sampling:
+		return 1
+		
+def read_coefficients(i2c):
+	bytes21 = 21
 
-# Register addresses
-PWR_CTRL = 0x1b
-DATA_0 = 0x04  # least significant byte of pressure data
-DATA_3 = 0x07  # least significant byte of temperature data
-CHIP_ID = 0x00
+	coeff = i2c.readfrom_mem(_BMP388_ADDRESS, _REG_CAL_DATA, bytes21)
+	coeff = unpack("<HHbhhbbHHbbhbb", coeff)#https://docs.python.org/3/library/struct.html
 
-
-def get_chip_id():
-    return int.from_bytes(i2c.readfrom_mem(ADDRESS, CHIP_ID, 1), "big")
-
-
-def single_read(which="Both"):
-    temperature = None
-    pressure = None
-    which = which.lower()
-    if which is "both":
-        temp_en = 1
-        press_en = 1
-    elif which is "temperature":
-        temp_en = 1
-        press_en = 0
-    elif which is "pressure":
-        temp_en = 0
-        press_en = 1
-    else:
-        raise TypeError(" was not a valid property to read.")
-    config = ((0b11 << 4) | (temp_en << 1) | (press_en))
-    config = config.to_bytes(1, "big")  # convert int to bytes literal
-    i2c.writeto_mem(ADDRESS, 1, config)  # setting power mode to 0b11 will tell it to do a reading
-
-    if which is "both":
-        burst_read = i2c.readfrom_mem(ADDRESS, DATA_0, 6)
-        pressure = burst_read[0:3]
-        temperature = burst_read[3:7]
-    elif which is "temperature":
-        temperature = i2c.readfrom_mem(ADDRESS, DATA_3, 3)
-    elif which is "pressure":
-        pressure = i2c.readfrom_mem(ADDRESS, DATA_0, 3)
-
-    if temperature:
-
-    return {"Temperature": temperature, "Pressure": pressure}
-
-
-def get_voltage(channel="A01"):
-    config = b'\x85\x83'
-    mux = 0b000
-    pga = 0b001  # this sets FS on the ADS1115
-    mode = 0b1
-    data_rate = 0b100
-    comp_mode = 0b0
-    comp_pol = 0b0
-    comp_lat = 0b0
-    comp_que = 0b11
-    if channel is "A0":
-        mux = 0b100
-    elif channel is "A1":
-        mux = 0b101
-    elif channel is "A2":
-        mux = 0b110
-    elif channel is "A3":
-        mux = 0b111
-    # the following multiplexer configs are differential
-    elif channel is "A01":
-        mux = 0b000
-    elif channel is "A03":
-        mux = 0b001
-    elif channel is "A13":
-        mux = 0b010
-    elif channel is "A23":
-        channel = 0b011
-    else:
-        raise TypeError(channel + " was not a valid input configuration.")
-    # config is the 16-bit configuration register of the ADS1115.
-    # Here we concatenate the above configuration variables
-    config = ((0b1 << 15) | (mux << 12) | (pga << 9) | (mode << 8) | (data_rate << 5) | (
-        comp_mode << 4) | (comp_pol << 3) | (comp_lat << 2) | (comp_que))
-    config = config.to_bytes(2, "big")  # convert int to bytes literal
-    i2c.writeto_mem(ADC, 1, config)  # writing the 15th (msb) as 1 will tell it to do a reading
-    while not (int.from_bytes(i2c.readfrom_mem(ADC, 1, 2), "big") & (0b1 << 15)):
-        # reading msb of 0 from the config register means a conversion is happening
-        # wait until conversion is done
-        sleep(0.01)
-    # reading 0b1 from the conversion register is equal to FS / 2^15
-    FS = 4.096
-    return int.from_bytes(i2c.readfrom_mem(ADC, 0, 2), "big") / 32768 * FS
-
-
-def get_temperature():
-    R1 = 99.2 * 1000
-    Vref1 = get_voltage("A3")
-    Vo = get_voltage("A0")
-    Rntc = R1 / (Vref1 / Vo - 1)
-    return epcos.get_temperature(Rntc)
-
-
-def get_temperature_fahrenheit():
-    return get_temperature() * 9 / 5 + 32
+	calibration = (
+		#Convert using formula in section 9.1 of datasheet.
+		coeff[0] / 2 ** -8.0, #T1
+		coeff[1] / 2 ** 30.0, #T2
+		coeff[2] / 2 ** 48.0, #T3
+		(coeff[3] - 2 ** 14.0) / 2 ** 20.0, #P1
+		(coeff[4] - 2 ** 14.0) / 2 ** 29.0, #P2
+		coeff[5] / 2 ** 32.0, #P3
+		coeff[6] / 2 ** 37.0, #P4
+		coeff[7] / 2 ** -3.0, # P5
+		coeff[8] / 2 ** 6.0, # P6
+		coeff[9] / 2 ** 8.0, # P7
+		coeff[10] / 2 ** 15.0, # P8
+		coeff[11] / 2 ** 48.0, # P9
+		coeff[12] / 2 ** 48.0, # P10
+		coeff[13] / 2 ** 65.0 #P11
+	)
+	return calibration
+	
+def get_altitude(i2c, cal, sea_level=_SEA_LEVEL):
+	bytes6 = 6
+	#Perform one measurement in forced mode
+	i2c.writeto_mem(_BMP388_ADDRESS, _REG_CONTROL, _FORCE_MEASURE)
+	
+	#Ensure data is ready to read
+	while unpack("B", i2c.readfrom_mem(_BMP388_ADDRESS, _REG_STATUS, 1))[0] & 0x60 != 0x60:
+		#print(i2c.readfrom_mem(_BMP388_ADDRESS, _REG_STATUS, 1))
+		sleep(0.02)
+	
+	data = i2c.readfrom_mem(_BMP388_ADDRESS, _REG_PRESSUREDATA, bytes6)
+	
+	adc_p = data[2]<<16 | data[1]<<8 | data[0]
+	adc_t = data[5]<<16 | data[4]<<8 | data[3]
+	
+	#Compensation calculations. temp = temperature
+	pd1 = adc_t - cal[0]
+	pd2 = pd1 * cal[1]
+	temp = pd2 + (pd1 * pd1) * cal[2]
+	
+	#Calculate pressure (sec 9.3):
+	pd1 = cal[8] * temp
+	pd2 = cal[9] * temp ** 2.0
+	pd3 = cal[10] * temp ** 3.0
+	po1 = cal[7] + pd1 + pd2 + pd3
+	
+	pd1 = cal[4] * temp
+	pd2 = cal[5] * temp ** 2.0
+	pd3 = cal[6] * temp ** 3.0
+	po2 = adc_p * (cal[3] + pd1 + pd2 + pd3)
+	
+	pd1 = adc_p ** 2.0
+	pd2 = cal[11] + cal[12] * temp
+	pd3 = pd1 * pd2
+	po3 = pd3 + cal[13] * adc_p ** 3.0
+	
+	pressure = po1 + po2 + po3
+	
+	#Calculate altitude:
+	#see https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
+	#The BMP388 provides pressure in Pascals. The elevation formula requires mbar. The conversion is:
+	#1 mbar = 100 Pa. Hence why we divide by 100 in the equation
+	return ((44307.7 * (1 - ((pressure/(100*sea_level)) ** 0.190284))), pressure, temp, temp*9/5 + 32)
