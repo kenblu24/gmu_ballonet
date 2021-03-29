@@ -4,7 +4,7 @@
 import math
 
 
-class height_lidar:
+class HEIGHT_LIDAR:
     def __init__(self, accelerometer, VL53L0X):
         self.accelerometer = accelerometer
         self.vl53l0x = VL53L0X
@@ -32,9 +32,9 @@ def main():
     import accelerometer
     i2c = I2C(0, scl=Pin(22), sda=Pin(21))
     adxl = adxl345.ADXL345(i2c, 83)
-    a = accelerometer.accelerometer(adxl, 'adxl345_calibration_2point')
+    a = accelerometer.ACCELEROMETER(adxl, 'adxl345_calibration_2point')
     lidar = VL53L0X.VL53L0X(i2c, 41)
-    this = height_lidar(a, lidar)
+    this = HEIGHT_LIDAR(a, lidar)
     read = this.read  # make function callable (so we can call distance.read() )
 
 

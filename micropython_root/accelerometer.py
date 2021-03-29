@@ -1,7 +1,7 @@
 GRAVITY = 9.80665
 
 
-class accelerometer:
+class ACCELEROMETER:
     def __init__(self, adxl345, file, unit=GRAVITY):
         self.unit = unit
         self.adxl345 = adxl345
@@ -52,7 +52,7 @@ def main():
     import adxl345
     i2c = I2C(0, scl=Pin(22), sda=Pin(21))
     a = adxl345.ADXL345(i2c, 83)
-    this = accelerometer(a, 'adxl345_calibration_2point')
+    this = ACCELEROMETER(a, 'adxl345_calibration_2point')
     getAxes = this.getAxes
 
 
