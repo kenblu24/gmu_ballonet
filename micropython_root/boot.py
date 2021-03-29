@@ -22,11 +22,14 @@ def start_ap():
     import webrepl
 
     ap = network.WLAN(network.AP_IF)
-    ap.config(essid="ESP-AP")
-    ap.config(max_clients=2)
     ap.active(True)
+    ap.config(essid="Blimpy_McBallonetFace",
+              password="gmuece493",
+              authmode=network.AUTH_WPA_WPA2_PSK
+              )
+    ap.config(max_clients=2)
 
-    webrepl.start(password="gmuece493")
+    webrepl.start(password="ffff")
 
 
 start_ap()
