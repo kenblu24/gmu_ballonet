@@ -99,6 +99,7 @@ class DRV8833:
             for io in motor.pins:
                 if type(io) is Pin:
                     io.init(Pin.OUT, value=0)
+        print("Emergency Stop called.")
 
     def duty_callback(self):
         # set SLEEP pin HIGH if all motors off, else LOW
@@ -112,3 +113,8 @@ class DRV8833:
 if __name__ == '__main__':
     # drv8833(pwm_frequency, sleep_pin, fault_pin, in1_pin, in2_pin, in3_pin, in4_pin)
     hbridge = DRV8833(1000, Pin(32), Pin(33), Pin(25), Pin(26), Pin(27), Pin(14))
+    # examples
+    # duty cycle can be set between 0 to 1
+    # hbridge.motor['A'].duty = 0.5
+    # hbridge.motor['B'].direction = "Forward"
+    # hbridge.motor['A'].pwm_frequency = 100
