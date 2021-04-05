@@ -233,89 +233,10 @@ format [X,Y,Z]
 """
 def calculate_velocity(velocity, accel, sample_rate):
 	v = [velocity[0] + accel[0]*sample_rate,\
-		 velocity[1] + accel[1]*sample_rate,\
-		 velocity[2] + accel[2]*sample_rate]
+	     velocity[1] + accel[1]*sample_rate,\
+	     velocity[2] + accel[2]*sample_rate]
 	return v
 
-"""
-TEST Stuff Below
-"""
-bno = make_i2c()
-set_mode(bno, 0x28, 12)
-v_accel = [0,0,0]
-v_lin_accel = [0,0,0]
-i=0
-"""
-output1 = get_linear_accel_data(bno,0x28)
-output2 = get_accel_data(bno,0x28)
-print("\nOUT_1:")
-for i in range(len(output1)):
-	print("\t" + str(output1[i]))
-print("\nOUT_2:")
-for i in range(len(output2)):
-	print("\t" + str(output2[i]))
-"""
-
-"""
-while(i<20):
-	output1=get_euler_data(bno,0x28)
-	output2=get_quaternion_data(bno,0x28)
-	output3=get_linear_accel_data(bno,0x28)
-	output4=get_grav_accel_data(bno,0x28)
-	output5=get_accel_data(bno,0x28)
-	#print("\nEuler Data:")
-	#for j in range(len(output1)):
-	#	print("\t" + str(output1[j]))
-	print("\nQuaternion Data:")
-	for j in range(len(output2)):
-		print("\t" + str(output2[j]))
-	#print("\nAccel Data:")
-	#for j in range(len(output5)):
-	#	print("\t" + str(output5[j]))
-	#print("\nLinear Accel Data:")
-	#for j in range(len(output3)):
-	#	print("\t" + str(output3[j]))
-	#print("\nGravity Accel Data:")
-	#for j in range(len(output4)):
-	#	print("\t" + str(output4[j]))
-	sleep(1)
-	i+=1
-"""
-"""
-quat = get_quaternion_data(bno, 0x28)
-accel = get_accel_data(bno, 0x28)
-print("\nAccel Data (pre-transform):")
-print(accel)
-print("\nAccel Data (post-transform):")
-new_accel = quaternion_rotation(quat,accel)
-print(new_accel)
-"""
-
-while(i<20):
-	quat = get_quaternion_data(bno,0x28)
-	accel = get_accel_data(bno,0x28)
-	lin_accel = get_linear_accel_data(bno,0x28)
-	
-	accel = quaternion_rotation(quat,accel)
-	lin_accel = quaternion_rotation(quat,lin_accel)
-	
-	v_accel = calculate_velocity(v_accel, accel, 0.6)
-	v_lin_accel = calculate_velocity(v_lin_accel, lin_accel, 0.6)
-	
-	print("\nAcceleration Data:")
-	print(v_accel)
-	print("\nLinear Acceleration Data:")
-	print(v_lin_accel)
-	
-	i+=1
-	sleep(0.6)
-		
-
-print("\nDemo Complete")
-"""CALCULATING VELOCITY:
-Take acceleration at regular intervals and
-add those values together, to get velocity.
-"""
 	
 	
 	
