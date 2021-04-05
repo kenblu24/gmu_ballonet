@@ -40,11 +40,15 @@ Helpful Resources:
 	
 	Matlab (includes useful advice on calibration)
 	https://www.mathworks.com/help/supportpkg/arduino/ref/bno055imusensor.html
+	
+	Rotation Matrices using gravity vector
+	https://www.allaboutcircuits.com/technical-articles/how-to-interpret-IMU-sensor-data-dead-reckoning-rotation-matrix-creation/
 """
 
 from machine import Pin, I2C
 from time import sleep
 from struct import unpack
+import math
 
 #Device i2c default address--actually, it seems like 0x28 might be 
 #preferred, sinec when I'm connected via usb I have to use it instead. Hmmm.
@@ -209,6 +213,16 @@ See:
 The divisor is needed because 1 quaternion unit = 2^14 = 16384, according to the datasheet, p35
 This is a little slow, but is still much faster than using trig functions. 
 As with the input acceleration, the output here is in cm/s^2
+
+The grav_vector_rotation_correction_matrix argument should be a vector of the x, y and z components of the gravity acceleration register. 
+It is recommended to generate the matrix only once, and to use it for correction calculations thereafter, since it 
+is somewhat expensive computationally, and we want to save clock cycles for the quaternion rotation. 
+Output is of the form
+	[x,y,z]
+	
+The get_adjusted_accel arguments should be the matrix output of the correction_matrix function, and any acceleration vector.
+The function simply performs matrix multiplication, using the matrix argument as the rotation matrix, and the accel argument 
+as the vector to be rotated. 
 """
 def quaternion_rotation(quaternion,accel):
 	divisor = 16384
@@ -218,6 +232,26 @@ def quaternion_rotation(quaternion,accel):
 		2*accel[0]*(q[0]*q[3] + q[1]*q[2]) + accel[1]*(q[0]**2 - q[1]**2 + q[2]**2 - q[3]**2) + 2*accel[2]*(q[2]*q[3] - q[0]*q[1]) ,\
 		2*accel[0]*(q[1]*q[3] - q[0]*q[2]) + 2*accel[1]*(q[0]*q[1] + q[2]*q[3]) + accel[2]*(q[0]**2 - q[1]**2 - q[2]**2 + q[3]**2)]
 	return new_accel_vector
+
+def grav_vector_rotation_correction_matrix(grav):
+	divisor = math.sqrt(grav[0]**2 + grav[1]**2 + grav[2]**2)
+	x = grav[0]/divisor
+	y = grav[1]/divisor
+	z = grav[2]/divisor
+	rotation_matrix = [\
+			  [(y**2 - z*(x**2))/(x**2 + y**2), (-x*y - x*y*z)/(x**2 + y**2), x],\
+			  [(-x*y - x*y*z)/(x**2 + y**2), (x**2 - z*(y**2))/(x**2 + y**2), y],\
+			  [-x, -y, -z]\
+			  ]
+	return rotation_matrix
+	
+def get_adjusted_accel(matrix, accel):
+	output = [0,0,0]
+	for i in range(len(matrix)):
+		for j in range(len(matrix[i])):
+			output[i] += matrix[i][j]*accel[j]
+	return output
+	
 
 """
 Velocity Calculation Functions:
@@ -233,55 +267,6 @@ format [X,Y,Z]
 """
 def calculate_velocity(velocity, accel, sample_rate):
 	v = [velocity[0] + accel[0]*sample_rate,\
-	     velocity[1] + accel[1]*sample_rate,\
-	     velocity[2] + accel[2]*sample_rate]
+		 velocity[1] + accel[1]*sample_rate,\
+		 velocity[2] + accel[2]*sample_rate]
 	return v
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
