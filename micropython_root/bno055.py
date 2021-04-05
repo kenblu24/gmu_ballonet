@@ -213,6 +213,8 @@ See:
 The divisor is needed because 1 quaternion unit = 2^14 = 16384, according to the datasheet, p35
 This is a little slow, but is still much faster than using trig functions. 
 As with the input acceleration, the output here is in cm/s^2
+NOTE: Due to datasheet ambiguities, I don't know if I need to use the inverse of the coefficients, or the provided values.
+I am currently testing this.
 
 The grav_vector_rotation_correction_matrix argument should be a vector of the x, y and z components of the gravity acceleration register. 
 It is recommended to generate the matrix only once, and to use it for correction calculations thereafter, since it 
@@ -226,7 +228,8 @@ as the vector to be rotated.
 """
 def quaternion_rotation(quaternion,accel):
 	divisor = 16384
-	q = [quaternion[0]/divisor, -quaternion[1]/divisor, -quaternion[2]/divisor, -quaternion[3]/divisor]
+	#q = [quaternion[0]/divisor, -quaternion[1]/divisor, -quaternion[2]/divisor, -quaternion[3]/divisor]
+	q = [quaternion[0]/divisor, quaternion[1]/divisor, quaternion[2]/divisor, quaternion[3]/divisor]
 	new_accel_vector = \
 		[accel[0]*(q[0]**2 + q[1]**2 - q[2]**2 - q[3]**2) + 2*accel[1]*(q[1]*q[2] - q[0]*q[3]) + 2*accel[2]*(q[0]*q[2] + q[1]*q[3]) ,\
 		2*accel[0]*(q[0]*q[3] + q[1]*q[2]) + accel[1]*(q[0]**2 - q[1]**2 + q[2]**2 - q[3]**2) + 2*accel[2]*(q[2]*q[3] - q[0]*q[1]) ,\
