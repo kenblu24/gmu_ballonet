@@ -214,7 +214,7 @@ The divisor is needed because 1 quaternion unit = 2^14 = 16384, according to the
 This is a little slow, but is still much faster than using trig functions. 
 As with the input acceleration, the output here is in cm/s^2
 NOTE: Due to datasheet ambiguities, I don't know if I need to use the inverse of the coefficients, or the provided values.
-I am currently testing this.
+Testing suggests to use the values without inverting them.
 
 The grav_vector_rotation_correction_matrix argument should be a vector of the x, y and z components of the gravity acceleration register. 
 It is recommended to generate the matrix only once, and to use it for correction calculations thereafter, since it 
