@@ -1,6 +1,29 @@
 """Authors: Kevin Eckert
 Simple library for use with Adafruit BNO055
 
+USAGE EXAMPLE (using quaternion):
+	velocity = 0
+	delta = 0.6
+	set_mode(i2c,address,mode=12)
+	sleep(1)	#to allow mode change
+	matrix = get_quaternion_data(i2c,address)
+	accel = get_linear_accel_data(i2c,address)
+	accel = quaternion_rotation(matrix,accel)
+	sleep(delta)
+	velocity = calculate_velocity(velocity,accel,delta)
+	
+USAGE EXAMPLE (using grav vector to form rotation matrix):
+	velocity = 0
+	delta = 0.6
+	set_mode(i2c,address,mode=12)
+	sleep(1)
+	grav_accel = get_grav_accel_data(i2c,address)
+	accel = get_linear_accel_data(i2c,address)
+	matrix = grav_vector_rotation_correction_matrix(grav)
+	accel = get_adjusted_accel(matrix, accel)
+	sleep(delta)
+	velocity = calculate_velocity(velocity,accel,delta)
+
 The BNO055 performs best when external crystal is used.
 Configure settings, then set mode. It takes 7ms to switch
 from configuration mode to other modes, and 19ms to switch
