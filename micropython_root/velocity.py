@@ -16,21 +16,20 @@ ctrl = 1
 delta = 0.6
 
 def velocity(i2c,address):
-	velocity = 0
+	velocity = [0,0,0]
 	bno.set_mode(i2c,address)
 	sleep(1)
 	while(ctrl==1):
 		matrix = bno.get_quaternion_data(i2c,address)
-		if velocity != 0:
-			accel = bno.get_linear_accel_data(i2c,address)
-			accel = bno.quaternion_rotation(matrix,accel)
-			sleep(delta)
-			velocity = bno.calculate_velocity(velocity,accel,delta)
-			if velocity < 0:
-				pump.pump_out()
-			if velocity > 0:
-				pump.pump_in()
-		if velocity == 0:
+		accel = bno.get_linear_accel_data(i2c,address)
+		accel = bno.quaternion_rotation(matrix,accel)
+		sleep(delta)
+		velocity = bno.calculate_velocity(velocity,accel,delta)
+		if velocity[2] > 0:
+			pump.pump_out()
+		elif velocity[2] < 0:
+			pump.pump_in()
+		elif velocity[2] == 0:
 			pump.stop()
 	return 0
 	
