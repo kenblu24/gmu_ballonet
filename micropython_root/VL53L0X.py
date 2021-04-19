@@ -1,4 +1,11 @@
+'''
+Micropython Library to allow for basic operation of the VL53L0X on the ESP32
+
+'''
+
 # modified from https://github.com/uceeatz/VL53L0X
+# which seems to be a port of Polulu's VL53L0X C++ api
+# which is derived from the official ST C API and documentation
 
 from micropython import const
 import ustruct
