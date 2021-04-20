@@ -1,19 +1,19 @@
 """
-The ALTITUDE class uses a laser ranger and barometer to calculate the altitude relative to a floor surface.
+The ALTITUDE class uses a ToF ranger and barometer to calculate the altitude relative to a floor surface.
 
 This class uses a short-range distance measuring device to calculate the height above the floor.
 This is then used to offset calculations from a barometer, which measures absolute height compared to sea level.
 The output is given as height above the floor in meters.
 
 To use this class, initialize it with a BMP388 device handler, and a ranging device handler.
-Then, call find_floor_from_range(set_floor=True) with the floor in range of the laser ranger.
+Then, call find_floor_from_range(set_floor=True) with the floor in range of the ToF ranger.
 
 """
 
 from time import sleep
 
 
-def mean(m):
+def mean(m):  # polyfill because Micropython has no module 'statistics'
     return sum(m) / len(m)
 
 
@@ -21,15 +21,17 @@ class ALTITUDE:
     def __init__(self, barometer, distance):
         self.barometer = barometer
         self.distance = distance
-        self.floor_altitude = 0
+        self.floor_altitude = 0  # On init, altitude will be reported compared to sea level
 
+    # find floor altitude compared to sea level using distance device (ToF sensor)
     def find_floor_from_range(self, n_average=10, set_floor=False):
+        # take n measurements to be averaged
         measurements = {'range': [], 'raw_altitude': []}
         for i in range(n_average):
             measurements['raw_altitude'].append(self.barometer.altitude)
-            measurements['range'].append(self.distance.read())
+            measurements['range'].append(self.distance.read())  # returns mm
             sleep(0.1)
-        avg_range_meters = mean(measurements['range']) / 1000.0
+        avg_range_meters = mean(measurements['range']) / 1000.0  # avg and convert to meters
         avg_altitude = mean(measurements['raw_altitude'])
         print("We are {r:.2f}m above the floor".format(r=avg_range_meters))
         print("We are {h:.2f}m compared to sea level".format(h=avg_altitude))
@@ -38,6 +40,7 @@ class ALTITUDE:
             self.floor_altitude = floor_altitude
         return floor_altitude
 
+    # Sets current device position as the floor; does not use ToF ranging
     def set_position_as_floor(self, n_average=10):
         measurements = {'raw_altitude': []}
         for i in range(n_average):
@@ -49,6 +52,11 @@ class ALTITUDE:
     def get_altitude(self):
         return self.barometer.altitude - self.floor_altitude
 
+    @property
+    def meters(self):
+        return self.get_altitude()
+
+    # Demo function. Prints average of five samples approximately every second
     def acquire_data(self, readings=20):
         for i in range(readings):
             # altitude = mean([self.get_altitude() for i in range(10)])

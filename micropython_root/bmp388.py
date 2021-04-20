@@ -20,27 +20,27 @@ SEA_LEVEL = 1013.25
 FORCE_MEASURE = b'\x13'
 RDY = const(0x60)
 # REGISTERS
-REG_ID = const(0x00)
-REG_ERROR = const(0x02)
-REG_STATUS = const(0x03)
-REG_PRESSUREDATA = const(0x04)  # pressure data contained on registers x04-06
-REG_TEMPDATA = const(0x07)  # temp data on reg x07-09
-REG_SENSORTIME = const(0x0C)  # from xC-xE
-REG_EVENT = const(0x10)
-REG_INT_STATUS = const(0x11)
-REG_FIFO_LENGTH = const(0x12)  # x12 - x13
-REG_FIFO_DATA = const(0x14)
-REG_FIFO_WATERMARK = const(0x15)  # x15-x16
-REG_FIFO_CONFIG_1 = const(0x17)
-REG_FIFO_CONFIG_2 = const(0x18)
-REG_INT_CTRL = const(0x19)
-REG_IF_CONF = const(0x1A)
-REG_CONTROL = const(0x1B)
-REG_OSR = const(0x1C)
-REG_ODR = const(0x1D)
-REG_CONFIG = const(0x1F)
-REG_CAL_DATA = const(0x31)  # calibration data actually starts at 0x30, however only 0x31-0x45 are used
-REG_CMD = const(0x7E)
+_REG_ID = const(0x00)
+_REG_ERROR = const(0x02)
+_REG_STATUS = const(0x03)
+_REG_PRESSUREDATA = const(0x04)  # pressure data contained on registers x04-06
+_REG_TEMPDATA = const(0x07)  # temp data on reg x07-09
+_REG_SENSORTIME = const(0x0C)  # from xC-xE
+_REG_EVENT = const(0x10)
+_REG_INT_STATUS = const(0x11)
+_REG_FIFO_LENGTH = const(0x12)  # x12 - x13
+_REG_FIFO_DATA = const(0x14)
+_REG_FIFO_WATERMARK = const(0x15)  # x15-x16
+_REG_FIFO_CONFIG_1 = const(0x17)
+_REG_FIFO_CONFIG_2 = const(0x18)
+_REG_INT_CTRL = const(0x19)
+_REG_IF_CONF = const(0x1A)
+_REG_CONTROL = const(0x1B)
+_REG_OSR = const(0x1C)
+_REG_ODR = const(0x1D)
+_REG_CONFIG = const(0x1F)
+_REG_CAL_DATA = const(0x31)  # calibration data actually starts at 0x30, however only 0x31-0x45 are used
+_REG_CMD = const(0x7E)
 
 
 class BMP388:
@@ -54,13 +54,13 @@ class BMP388:
 
     def get_data(self):
         # Perform one measurement in forced mode
-        self.i2c.writeto_mem(self.address, REG_CONTROL, FORCE_MEASURE)
+        self.i2c.writeto_mem(self.address, _REG_CONTROL, FORCE_MEASURE)
 
         # Ensure data is ready to read
-        while unpack("B", self.i2c.readfrom_mem(self.address, REG_STATUS, 1))[0] & 0x60 != 0x60:
+        while unpack("B", self.i2c.readfrom_mem(self.address, _REG_STATUS, 1))[0] & 0x60 != 0x60:
             sleep(0.02)
 
-        data = self.i2c.readfrom_mem(self.address, REG_PRESSUREDATA, 6)
+        data = self.i2c.readfrom_mem(self.address, _REG_PRESSUREDATA, 6)
 
         adc_p = data[2] << 16 | data[1] << 8 | data[0]
         adc_t = data[5] << 16 | data[4] << 8 | data[3]
@@ -104,14 +104,14 @@ class BMP388:
 
     @oversampling.setter
     def oversampling(self, sampling):
-        self.i2c.writeto_mem(self.address, REG_OSR, sampling)
-        if self.i2c.readfrom_mem(self.address, REG_OSR, 1) != sampling:
+        self.i2c.writeto_mem(self.address, _REG_OSR, sampling)
+        if self.i2c.readfrom_mem(self.address, _REG_OSR, 1) != sampling:
             raise IOError("Could not successfully set oversampling")
         self._oversampling = sampling
 
     def read_coefficients(self):
 
-        coeff = self.i2c.readfrom_mem(self.address, REG_CAL_DATA, 21)
+        coeff = self.i2c.readfrom_mem(self.address, _REG_CAL_DATA, 21)
         coeff = unpack("<HHbhhbbHHbbhbb", coeff)  # https://docs.python.org/3/library/struct.html
 
         calibration = (
