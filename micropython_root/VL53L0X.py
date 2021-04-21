@@ -119,6 +119,7 @@ class TimeoutError(RuntimeError):
 
 class VL53L0X:
     def __init__(self, i2c, address=0x29):
+        self.DEVICE_TYPE = 'VL53L0X_polulu'
         self.i2c = i2c
         self.address = address
         self.init()

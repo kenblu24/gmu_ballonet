@@ -12,24 +12,30 @@ Then, call find_floor_from_range(set_floor=True) with the floor in range of the 
 
 from time import sleep
 from statistics_tools import mean
-
-def mean(m):  # polyfill because Micropython has no module 'statistics'
-    return sum(m) / len(m)
+from distance import OUT_OF_RANGE
 
 
 class ALTITUDE:
-    def __init__(self, barometer, distance):
+    def __init__(self, barometer, short_range_finder=None, long_range_finder=None):
         self.barometer = barometer
-        self.distance = distance
+        self.sr = short_range_finder
+        self.lr = long_range_finder
+        self.original_floor_altitude = 0  # this should only be set explicitly.
         self.floor_altitude = 0  # On init, altitude will be reported compared to sea level
+        # Maximum deviation from known floor altitude. Deviation higher
+        # than this will not allow self-calibration
+        self.calibration_drift = 0  # set to 0 to disable continual calibration
+        # maximum deviation for use of rangefinder
+        # Used to prevent rangefinder from being used if object passes below us
+        self.barometer_drift = 1
 
-    # find floor altitude compared to sea level using distance device (ToF sensor)
+    # find floor altitude compared to sea level using shortrange device (ToF sensor)
     def find_floor_from_range(self, n_average=10, set_floor=False):
         # take n measurements to be averaged
         measurements = {'range': [], 'raw_altitude': []}
         for i in range(n_average):
             measurements['raw_altitude'].append(self.barometer.altitude)
-            measurements['range'].append(self.distance.read())  # returns mm
+            measurements['range'].append(self.sr.read())  # returns mm
             sleep(0.1)
         avg_range_meters = mean(measurements['range']) / 1000.0  # avg and convert to meters
         avg_altitude = mean(measurements['raw_altitude'])
@@ -38,19 +44,49 @@ class ALTITUDE:
         floor_altitude = avg_altitude - avg_range_meters
         if set_floor:
             self.floor_altitude = floor_altitude
+            self.original_floor_altitude = floor_altitude
+            print("Floor altitude was set to " + str(floor_altitude))
         return floor_altitude
 
     # Sets current device position as the floor; does not use ToF ranging
-    def set_position_as_floor(self, n_average=10):
+    def set_position_as_floor(self, n_average=5, delay=0.5, offset=0):
         measurements = {'raw_altitude': []}
         for i in range(n_average):
             measurements['raw_altitude'].append(self.barometer.altitude)
-            sleep(0.2)
-        self.floor_altitude = mean(measurements['raw_altitude'])
-        return self.floor_altitude
+            sleep(delay)
+        floor_altitude = mean(measurements['raw_altitude']) + offset
+        self.original_floor_altitude = floor_altitude
+        self.floor_altitude = floor_altitude
+        return floor_altitude
 
     def get_altitude(self):
-        return self.barometer.altitude - self.floor_altitude
+        raw_altitude = self.barometer.altitude
+        barometer_altitude_rel = raw_altitude - self.floor_altitude
+        if self.sr:
+            # try reading short-range rangefinder and convert mm to meters.
+            distance = self.sr.read() / 1000
+            if not 0 < distance < OUT_OF_RANGE:
+                distance = None
+        if self.lr and not distance:
+            # short-range rangefinder didn't work.
+            # try reading long-range rangefinder and convert mm to meters.
+            distance = self.lr.read() / 1000
+            if not 0 < distance < OUT_OF_RANGE:
+                distance = None
+        if not distance:
+            # neither rangefinder got a valid reading. Gotta use barometer.
+            return barometer_altitude_rel
+        # deviation is the difference in the height above the floor
+        # between the barometer and rangefinder reading.
+        # When in doubt, we want take the barometer as the truth.
+        deviation = abs(distance - barometer_altitude_rel)
+        # if rangefinder agrees with barometer, use rangefinder
+        if deviation < self.barometer_drift:
+            if deviation < self.calibration_drift:
+                self.floor_altitude = raw_altitude - distance
+            return distance
+        # else use barometer
+        return barometer_altitude_rel
 
     @property
     def meters(self):
@@ -80,7 +116,7 @@ def main():
     from VL53L0X import VL53L0X
     from adxl345 import ADXL345
     from accelerometer import ACCELEROMETER
-    from distance import HEIGHT_LIDAR
+    from distance import HeightTiltCompensator
 
     # I2C Object
     if 'i2c' not in globals():
@@ -89,12 +125,12 @@ def main():
 
     adxl = ADXL345(i2c, 83)
     accelerometer = ACCELEROMETER(adxl, 'adxl345_calibration_2point')
-    lidar = VL53L0X(i2c, 41)
-    distance_fusion = HEIGHT_LIDAR(accelerometer, lidar)
+    tof = VL53L0X(i2c, 41)
+    distance_fusion = HeightTiltCompensator(accelerometer, tof)
     barometer = BMP388(i2c)
 
     this = ALTITUDE(barometer, distance_fusion)
-    this.distance.offset = -40.0
+    this.sr.offset = -40.0
 
     acquire_data = this.acquire_data
     get_altitude = this.get_altitude
