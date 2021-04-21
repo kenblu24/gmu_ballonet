@@ -4,6 +4,7 @@ import _thread
 from time import sleep
 import time
 
+from statistics_tools import abs_fwd_timegraph, linreg_past
 from bmp388 import BMP388
 from VL53L0X import VL53L0X
 from adxl345 import ADXL345

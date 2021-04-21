@@ -11,7 +11,7 @@ Then, call find_floor_from_range(set_floor=True) with the floor in range of the 
 """
 
 from time import sleep
-
+from statistics_tools import mean
 
 def mean(m):  # polyfill because Micropython has no module 'statistics'
     return sum(m) / len(m)
