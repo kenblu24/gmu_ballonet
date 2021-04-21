@@ -12,7 +12,9 @@ Notes:
 	starting with 'R' (0101 0010) and ending with 
 	carriage return (0000 1101). 
 	
-	The uart device should be configured as follows:
+	The uart device should be configured as follows.
+	I emphasize that, if timeout is set too low, the
+	device WILL NOT WORK PROPERLY:
 	
 	Baudrate  = 9600
 	Data Size = 8 bits
