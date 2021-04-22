@@ -1,3 +1,27 @@
+'''
+Middleman for ADXL345 driver implementing calibration data
+
+Class can be called with the same endpoints as in the ADXL345 driver
+Class must be fed an ADXL345 driver to work, as well as a file
+  containing the calibration data
+
+Calibration is a simple 2-point linear approximation.
+
+Calibration data must be of the following format,
+  tab-separated XYZ negative, positive readings with the
+  respective axes of the device straight down (negative) or up (positive)
+
+EXAMPLE BEGINS ON NEXT LINE>
+X negative: -2636.0278  3.9226  356.9621
+X positive: 2441.8559   -5.8840 458.9512
+Y negative: -162.7904   -2559.5357  402.0727
+Y positive: -113.7572   2590.9166   456.9899
+Z negative: 7.8453  113.7571    -2069.2031
+Z positive: -137.2931   -25.4973    2906.6914
+
+Anything after this point will not be read by parser.
+'''
+
 GRAVITY = 9.80665
 
 

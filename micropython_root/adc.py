@@ -1,3 +1,9 @@
+'''
+ADS1115 driver for ESP32 running Micropython
+
+Not fully implemented.
+'''
+
 from time import sleep
 
 

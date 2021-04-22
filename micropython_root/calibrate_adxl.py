@@ -1,3 +1,21 @@
+'''
+Wizard for procedure to generate calibration data for ADXL345
+
+Read and understand the Adafruit guide here:
+https://learn.adafruit.com/adxl345-digital-accelerometer/programming
+
+Then, run `import calibrate_adxl` and follow the prompts.
+ADXL should be aligned against a backstop for best results.
+
+Results will be stored in the file designated by `FILENAME`
+said file can be fed to our ACCELEROMETER class.
+
+The results will be an average of several readings;
+the number of readings is determined by `READINGS`
+
+'''
+
+
 from time import sleep
 
 READINGS = 5

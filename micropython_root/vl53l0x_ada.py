@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017 Tony DiCola for Adafruit Industries
 #
 # SPDX-License-Identifier: MIT
+# Modified by Kevin Zhu to work on the ESP32 running Micropython 1.14
 
 """
 `adafruit_vl53l0x`

@@ -14,7 +14,7 @@ from distance import HeightTiltCompensator
 from altitude import ALTITUDE
 import pump
 
-_ALTITUDE_SAMPLING_TIME_BUDGET = 110  # sampling period of barometer in ms
+_ALTITUDE_SAMPLING_TIME_BUDGET = 200  # sampling period of barometer in ms
 
 # I2C Object
 if 'i2c' not in globals():

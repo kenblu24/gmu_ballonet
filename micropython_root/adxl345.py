@@ -1,4 +1,4 @@
-# ADXL345 Python library for Raspberry Pi
+'''ADXL345 Python library for Raspberry Pi
 #
 # author:  Jonathan Williamson
 # license: BSD, see LICENSE.txt included in this package
@@ -8,7 +8,7 @@
 
 # This file has been modified to work with the ESP32 running Micropython
 # -- Kevin Zhu
-
+'''
 
 # ADXL345 constants
 EARTH_GRAVITY_MS2 = 9.80665

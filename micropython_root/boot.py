@@ -10,6 +10,8 @@ from machine import Pin, I2C
 i2c = I2C(0, scl=Pin(22), sda=Pin(21))
 
 
+# You can only import a file once
+# Use this to run it a second time (or more)
 def reload(mod):
     mod_name = mod.__name__
     del modules[mod_name]
@@ -17,6 +19,10 @@ def reload(mod):
     return __import__(mod_name)
 
 
+# Starts access point, allowing for wireless terminal access
+# Connect using SSID and password, then use Webrepl client
+# Further information at bottom of page:
+# https://docs.micropython.org/en/latest/esp32/quickref.html
 def start_ap():
     import network
     import webrepl

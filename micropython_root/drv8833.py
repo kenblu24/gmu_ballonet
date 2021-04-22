@@ -1,17 +1,23 @@
 from machine import Pin, PWM
 
 
+# this class controls an individual channel (A or B) on the drv8833
+# It is meant to be used as an internal class for the full driver
 class MOTOR_BANK:
     def __init__(self, pwm_frequency, in1_pin, in2_pin, duty_callback=None):
         self._pwm_frequency = pwm_frequency
+        # Warning! Index change. in1 is [0], in2 is [1]
         self.pins = (in1_pin, in2_pin)
         for pin in self.pins:
+            # init both output pins as GPIO
             pin.init(Pin.OUT, value=0)
+        # PWM object takes precedence over GPIO output of that pin
         self.out = [self.pins[0], PWM(self.pins[1], freq=pwm_frequency, duty=0)]
         self._direction = "Forward"
         self._duty = 0
         self._duty_int = 0
-        self.duty_callback = duty_callback
+        self.duty_callback = duty_callback  # called when duty is changed
+        # used for setting sleep when all motors off.
 
     @property
     def duty(self):
@@ -19,8 +25,10 @@ class MOTOR_BANK:
 
     @duty.setter
     def duty(self, duty):
+        # changes internal duty cycle and updates PWM output
         self._duty = duty
         self._duty_int = min(1023, max(0, int(duty * 1024)))
+        # change duty cycle while preserving direction
         if type(self.out[0]) is PWM:
             self.out[0].duty(self._duty_int)
         elif type(self.out[1]) is PWM:
@@ -40,6 +48,8 @@ class MOTOR_BANK:
 
     @direction.setter
     def direction(self, direction):
+        # logic to set pin config based on direction
+        # See DRV8833 datasheet for more info
         if direction in ("Forward", "Forward Coast", "Reverse Brake"):
             if type(self.out[1]) is PWM:
                 self.out[1].deinit()
@@ -67,6 +77,7 @@ class MOTOR_BANK:
 
     @pwm_frequency.setter
     def pwm_frequency(self, frequency):
+        # changes internal pwm_frequency and updates PWM output
         self._pwm_frequency = frequency
         if type(self.out[0]) is PWM:
             self.out[0].freq(self._pwm_frequency)
@@ -76,9 +87,10 @@ class MOTOR_BANK:
 
 class DRV8833:
     def __init__(self, pwm_frequency, sleep_pin, fault_pin, in1_pin, in2_pin, in3_pin, in4_pin):
-        self.sleep = sleep_pin
+        # this class controls stuff between banks.
+        self.sleep = sleep_pin  # Active LOW (DRV8833 enabled when HIGH)
         self.sleep.init(mode=Pin.OUT, value=0)
-        self.fault = fault_pin
+        self.fault = fault_pin  # NOT IMPLEMENTED but can read with this.fault.value
         self.fault.init(mode=Pin.IN)
 
         self.sleep.off()
@@ -90,6 +102,8 @@ class DRV8833:
             self.motor['B'] = MOTOR_BANK(pwm_frequency, in3_pin, in4_pin, self.duty_callback)
 
     def emergency_stop(self):
+        # Attempts to shut off all pins in all defined motor channels.
+        # May require re-init to use motors afterwards.
         for motor in self.motor.values():
             for io in motor.out:
                 if type(io) is PWM:

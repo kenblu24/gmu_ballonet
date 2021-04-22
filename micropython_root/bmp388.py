@@ -1,7 +1,7 @@
 """
 This class implements the BMP388 barometer and temperature sensor for the ESP32 over i2c.
 
-Authors: Kevin Eckert
+Authors: Kevin Eckert, Kevin Zhu
 
 Initialize with BMP388(i2c, address)
 Get altitude with this.altitude
@@ -49,9 +49,10 @@ class BMP388:
         self.i2c = i2c
         self._oversampling = None
         self.oversampling = DEFAULT_SAMPLING
-        self.cal = self.read_coefficients()
+        self.cal = self._read_coefficients()
         self.sea_level = SEA_LEVEL
 
+    # returns tuple of altitude(meters), pressure(pascals), temperature(C), temperature(F)
     def get_data(self):
         # Perform one measurement in forced mode
         self.i2c.writeto_mem(self.address, _REG_CONTROL, FORCE_MEASURE)
@@ -92,7 +93,13 @@ class BMP388:
         # see https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf
         # The BMP388 provides pressure in Pascals. The elevation formula requires mbar. The conversion is:
         # 1 mbar = 100 Pa. Hence why we divide by 100 in the equation
-        return ((44307.7 * (1 - ((pressure / (100 * self.sea_level)) ** 0.190284))), pressure, temp, temp * 9 / 5 + 32)
+        altitude = (44307.7 * (1 - ((pressure / (100 * self.sea_level)) ** 0.190284)))
+        return (
+            altitude,
+            pressure,
+            temp,
+            temp * 9 / 5 + 32
+        )
 
     @property
     def altitude(self):  # return altitude in meters above sea level
@@ -109,8 +116,8 @@ class BMP388:
             raise IOError("Could not successfully set oversampling")
         self._oversampling = sampling
 
-    def read_coefficients(self):
-
+    # read device coefficients used for calculating temperatures/pressures
+    def _read_coefficients(self):
         coeff = self.i2c.readfrom_mem(self.address, _REG_CAL_DATA, 21)
         coeff = unpack("<HHbhhbbHHbbhbb", coeff)  # https://docs.python.org/3/library/struct.html
 

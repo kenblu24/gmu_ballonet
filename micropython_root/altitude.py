@@ -1,12 +1,20 @@
 """
-The ALTITUDE class uses a ToF ranger and barometer to calculate the altitude relative to a floor surface.
+The ALTITUDE class uses up to two distance ranging devices and barometer to calculate the altitude relative to a floor surface.
 
-This class uses a short-range distance measuring device to calculate the height above the floor.
-This is then used to offset calculations from a barometer, which measures absolute height compared to sea level.
+This class uses the best available distance measuring device to calculate the height above the floor.
+This is then used to offset calculations from a barometer
+  which measures absolute height compared to sea level.
 The output is given as height above the floor in meters.
 
-To use this class, initialize it with a BMP388 device handler, and a ranging device handler.
-Then, call find_floor_from_range(set_floor=True) with the floor in range of the ToF ranger.
+A barometer is required for this class to function,
+  but you can choose not to use it by setting `barometer_drift` high.
+
+To use this class, initialize it
+  with a BMP388 device driver object, and a up to two ranging device drivers.
+
+Then, call find_floor_from_range(set_floor=True)
+  with the floor in range of the short-range ToF ranger, and hold as steady as possible.
+  At least 30 mm (3 cm, or more than an inch) from the floor is good.
 
 """
 
@@ -26,7 +34,8 @@ class ALTITUDE:
         # than this will not allow self-calibration
         self.calibration_drift = 0  # set to 0 to disable continual calibration
         # maximum deviation for use of rangefinder
-        # Used to prevent rangefinder from being used if object passes below us
+        # Used to prevent rangefinder from being used if object passes below us.
+        # Set to very high value to never use barometer.
         self.barometer_drift = 1
 
     # find floor altitude compared to sea level using shortrange device (ToF sensor)
@@ -60,6 +69,7 @@ class ALTITUDE:
         return floor_altitude
 
     def get_altitude(self):
+        # read barometer
         raw_altitude = self.barometer.altitude
         barometer_altitude_rel = raw_altitude - self.floor_altitude
         if self.sr:

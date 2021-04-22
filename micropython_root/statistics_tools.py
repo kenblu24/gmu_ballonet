@@ -3,6 +3,7 @@ def mean(m):  # polyfill because Micropython has no module 'statistics'
 
 
 # returns list as cumulative, starting at element s onwards
+# [1 1 1 1] becomes [1 2 3 4] where s = 1
 def abs_fwd_timegraph(list_, s):
     y = list_.copy()
     for i in range(s, len(y)):

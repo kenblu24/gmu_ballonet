@@ -1,5 +1,12 @@
-# This file contains the distance_sensor class
-# class distance_sensor gives a tilt-corrected height measurement
+'''
+Height tilt-correction for distance sensors using ADXL345 accelerometer
+
+# class HeightTiltCompensator gives a tilt-corrected height measurement
+# Ranging device may be VL53L0X using one of two device drivers
+#  or Maxbotix XL-Maxsonar (UART)
+# Accelerometer device must be ADXL345
+# Uses angle of device compared to gravity vector to compensate height reading
+'''
 
 import math
 
@@ -11,9 +18,14 @@ class HeightTiltCompensator:
     def __init__(self, accelerometer, ranging_device):
         self.accelerometer = accelerometer
         self.rangefinder = ranging_device
-        self.offset = 0  # single-point calibration offset
-        self.cone_adjust = 1
+        self.offset = 0  # single-point calibration offset for ranging device
+        # adjustment for cone beam compensation (edges of cone read closer)
+        # without it, tilting further will cause compensated height to be low
+        self.cone_adjust = 1  # value of 0 disables cone adjustment. 1 is max
+        # maximum tilt allowed before distance measurement is marked invalid
         self.max_angle = math.radians(45)
+
+        # set certain constants based on ID string in device driver class.
         try:
             self.type = ranging_device.DEVICE_TYPE
         except AttributeError:
@@ -37,7 +49,7 @@ class HeightTiltCompensator:
             self.MIN_RANGE = 200
             self.CONE_ADJUST = 0.8
 
-    # this will be used if device is serial maxsonar type
+    # this will be used if device is UART maxsonar type
     def read_XLMAXSONAR(self):
         raw_distance = self.rangefinder.range
         if raw_distance > 7600:
@@ -45,6 +57,7 @@ class HeightTiltCompensator:
         ranged_distance = max(raw_distance + self.offset, 1)
         return self.tilt_compensation(ranged_distance)
 
+    # this will be used if device is serial maxsonar type
     def read_VL53L0X_ada(self):
         raw_distance = self.rangefinder.range
         if raw_distance > 8100:  # VL53L0X typically reads 8192 when out of range (too far)
@@ -77,6 +90,8 @@ class HeightTiltCompensator:
         # return invalid if we're not pointing mostly straight down
         if not 0.0 < theta < self.max_angle:
             return INVALID
+        # cone correction scales the effect of tilt compensation with the distance read
+        # This may need to be re-written; I don't think my math is right
         cone_correction = 1 - (min(distance, self.MAX_RANGE) / self.MAX_RANGE) * self.CONE_ADJUST
         distance = distance * math.cos(theta * cone_correction)
         return int(distance)
