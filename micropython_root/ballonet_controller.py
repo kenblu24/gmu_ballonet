@@ -8,6 +8,7 @@ from statistics_tools import abs_fwd_timegraph, linreg_past
 
 from bmp388 import BMP388
 from VL53L0X import VL53L0X
+from maxsonar import XLMaxSonarUART
 from adxl345 import ADXL345
 from accelerometer import ACCELEROMETER
 from distance import HeightTiltCompensator
@@ -24,10 +25,12 @@ if 'i2c' not in globals():
 adxl = ADXL345(i2c, 83)
 accelerometer = ACCELEROMETER(adxl, 'adxl345_calibration_2point')
 tof = VL53L0X(i2c, 41)
-distance_fusion = HeightTiltCompensator(accelerometer, tof)
+tof_fusion = HeightTiltCompensator(accelerometer, tof)
+ultrasonic = XLMaxSonarUART()
+ultrasonic_fusion = HeightTiltCompensator(accelerometer, ultrasonic)
 barometer = BMP388(i2c)
 
-altitude = ALTITUDE(barometer, distance_fusion)
+altitude = ALTITUDE(barometer, tof_fusion, ultrasonic_fusion)
 altitude.sr.offset = -40.0
 
 _MAX_LIST_SIZE = const(120)
@@ -79,6 +82,12 @@ def __loop(n_s, T):
         print("{:3}| T: {:3d}, H: {:7.3f}, V: {:4d}".format(i, t[-1], h[-1], history['velocity'][-1]))
         i += 1
         sleep(T)
+
+
+def calibrate(barometer_drift=1, calibration_drift=0.25):
+    altitude.find_floor_from_range(10, True)
+    altitude.barometer_drift = barometer_drift
+    altitude.calibration_drift = calibration_drift
 
 
 def start(velocity_setpoint=0, tolerance=50, n_s=5, T=1000):

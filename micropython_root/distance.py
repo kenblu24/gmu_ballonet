@@ -8,6 +8,7 @@ Height tilt-correction for distance sensors using ADXL345 accelerometer
 # Uses angle of device compared to gravity vector to compensate height reading
 '''
 
+from time import sleep
 import math
 
 OUT_OF_RANGE = float('inf')
@@ -45,17 +46,27 @@ class HeightTiltCompensator:
             self.rangefinder.set_measurement_timing_budget(33000)  # API broken, this doesn't work
         elif self.type == 'XL-MAXSONAR':
             self.read = self.read_XLMAXSONAR
+            self.start = self.start_XLMAXSONAR
+            self.read_buffered = self.read_buffered_XLMAXSONAR
             self.MAX_RANGE = 7500
             self.MIN_RANGE = 200
             self.CONE_ADJUST = 0.8
 
     # this will be used if device is UART maxsonar type
     def read_XLMAXSONAR(self):
-        raw_distance = self.rangefinder.range
-        if raw_distance > 7600:
+        self.start_XLMAXSONAR()
+        sleep(0.1)
+        return self.read_buffered_XLMAXSONAR()
+
+    def start_XLMAXSONAR(self):
+        self.rangefinder.start()
+
+    def read_buffered_XLMAXSONAR(self):
+        raw_distance = self.rangefinder.read()
+        if raw_distance > 763:
             return OUT_OF_RANGE
-        ranged_distance = max(raw_distance + self.offset, 1)
-        return self.tilt_compensation(ranged_distance)
+        ranged_distance = max(raw_distance + self.offset / 10, 1)
+        return self.tilt_compensation(ranged_distance) * 10
 
     # this will be used if device is serial maxsonar type
     def read_VL53L0X_ada(self):

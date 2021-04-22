@@ -69,6 +69,9 @@ class ALTITUDE:
         return floor_altitude
 
     def get_altitude(self):
+        # start a read on lr rangefinder if available
+        if self.lr:
+            self.lr.start()
         # read barometer
         raw_altitude = self.barometer.altitude
         barometer_altitude_rel = raw_altitude - self.floor_altitude
@@ -80,9 +83,14 @@ class ALTITUDE:
         if self.lr and not distance:
             # short-range rangefinder didn't work.
             # try reading long-range rangefinder and convert mm to meters.
-            distance = self.lr.read() / 1000
-            if not 0 < distance < OUT_OF_RANGE:
+            # By now, the sensor should have read the data into the UART buffer
+            try:
+                distance = self.lr.read_buffered() / 1000
+            except TypeError:
                 distance = None
+            else:
+                if not 0 < distance < OUT_OF_RANGE:
+                    distance = None
         if not distance:
             # neither rangefinder got a valid reading. Gotta use barometer.
             return barometer_altitude_rel
