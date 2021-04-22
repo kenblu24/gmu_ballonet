@@ -12,12 +12,23 @@ Notes:
 	starting with 'R' (0101 0010) and ending with 
 	carriage return (0000 1101). 
 	
+	The uart device should be configured as follows.
+	I emphasize that, if timeout is set too low, the
+	device WILL NOT WORK PROPERLY:
+	
 	Baudrate  = 9600
 	Data Size = 8 bits
-	Parity 	  =	none
+	Parity 	  = none
 	Stop bits = 1
+	invert    = UART.INV_RX | UART.INV_TX
+	timeout   = 100
+	timeout_char = 100
 	
-	timeout and timeout_char need to be fairly large
+	Here is a line for ease of use with the machine UART class. This will work, choose rx and tx pins to flavor:
+	
+	#uart = UART(2, baudrate=9600, bits=8, parity=None, stop=1, rx=12, tx=13, invert=UART.INV_RX | UART.INV_TX, timeout=100, timeout_char=100)
+	
+	Note, the timeout does not affect the sample rate.
 	
 Output Format:
 	After the R, each ASCII encoded value corresponds 
@@ -40,6 +51,5 @@ def get_range(sonar):
 	return data
 
 #uart = UART(2, baudrate=9600, bits=8, parity=None, stop=1, rx=16, tx=17, invert=UART.INV_RX | UART.INV_TX, timeout=100, timeout_char=100)
-uart = UART(2, baudrate=9600, bits=8, parity=None, stop=1, rx=12, tx=13, invert=UART.INV_RX | UART.INV_TX, timeout=100, timeout_char=100)
-
-print(get_range(uart))
+#uart = UART(2, baudrate=9600, bits=8, parity=None, stop=1, rx=12, tx=13, invert=UART.INV_RX | UART.INV_TX, timeout=100, timeout_char=100)
+#print(get_range(uart))
