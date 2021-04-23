@@ -17,6 +17,7 @@ the number of readings is determined by `READINGS`
 
 
 from time import sleep
+from statistics_tools import mean
 
 READINGS = 5
 FILENAME = "adxl345_calibration_2point"
@@ -77,7 +78,3 @@ def average_readings(n):
         z.append(axes['z'])
         sleep(0.01)
     return {'x': mean(x), 'y': mean(y), 'z': mean(z)}
-
-
-def mean(m):
-    return sum(m) / len(m)

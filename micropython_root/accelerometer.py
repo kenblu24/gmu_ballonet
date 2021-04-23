@@ -19,7 +19,6 @@ Y positive: -113.7572   2590.9166   456.9899
 Z negative: 7.8453  113.7571    -2069.2031
 Z positive: -137.2931   -25.4973    2906.6914
 
-Anything after this point will not be read by parser.
 '''
 
 GRAVITY = 9.80665

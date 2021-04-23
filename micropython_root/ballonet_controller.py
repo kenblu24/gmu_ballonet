@@ -35,11 +35,49 @@ altitude.sr.offset = -40.0
 
 _MAX_LIST_SIZE = const(120)
 
+CFGFILE = "ballonet_controller_cfg"
+
+cfg = {
+    'setpoint': 0,  # maintain this velocity
+    'bangbang_tolerance': 50,  # mm/s, activate pump above this speed
+
+    # when above ceiling height, decrease velocity setpoint
+    # it may be good to set this well under max range of LR rangefinder
+    # set to float('inf') to disable
+    'ceiling_height': 120,
+
+    # when below floor height, increase velocity setpoint
+    # set to float('-inf') to disable
+    'floor_height': 0,
+
+    # noise scaling will widen the bangbang tolerance if noise is detected
+    'noise_scaling': False,
+
+    # see altitude.py file for info on these
+    'barometer_drift': 1,
+    'calibration_drift': 0.25
+}
+
+
+def loadcfg():
+    with open(CFGFILE, 'r') as f:
+        text = f.read().rstrip().split("\n")
+        for i in text:
+            key, value = i.split("\t")
+            cfg[key] = eval(value)
+    altitude.barometer_drift = cfg['barometer_drift']
+    altitude.calibration_drift = cfg['calibration_drift']
+
+
+def savecfg():  # only dicts with string keys and stringable values are supported
+    # sadly pickle module not available in micropython yet :(
+    with open(CFGFILE, 'w') as f:
+        for key in cfg:
+            f.write("{key}\t{value}\n".format(key=key, value=str(cfg[key])))
+
 
 def __loop(n_s, T):
-    global setpoint
     global enable
-    global bangbang_tolerance
     global history
     # Length of history to use for calculating velocity
     history = {'altitude': [], 'velocity': [], 'time': []}
@@ -58,6 +96,7 @@ def __loop(n_s, T):
             print("Stopping!")
             _thread.exit()
             return
+        setpoint = cfg['setpoint']
         h = history['altitude']
         t = history['time']
         fix_push(h, 0.5 * altitude.meters + 0.5 * h[-1])
@@ -70,13 +109,17 @@ def __loop(n_s, T):
         # convert velocity from weird units to mm/s
         velocity = int(velocity * 1000 * 1000 / (sum(t[-n_s:]) / 1000))
         fix_push(history['velocity'], velocity)
-        e = setpoint - velocity
+        if h[-1] < cfg['floor_height']:
+            setpoint += 50
+        elif h[-1] > cfg['ceiling_height']:
+            setpoint -= 50
+        e = velocity - setpoint  # +e is the velocity above the setpoint
         pwm_duty = 1
-        if abs(e) > bangbang_tolerance:
-            if e > 0:
-                pump.pump_out(pwm_duty)
-            elif e < 0:
-                pump.pump_in(pwm_duty)
+        if abs(e) > cfg['bangbang_tolerance']:
+            if e > 0:  # velocity too upwards
+                pump.pump_in(pwm_duty)  # reduce buoyancy
+            elif e < 0:  # velocity too downwards
+                pump.pump_out(pwm_duty)  # increase buoyancy
         else:
             pump.stop()
         print("{:3}| T: {:3d}, H: {:7.3f}, V: {:4d}".format(i, t[-1], h[-1], history['velocity'][-1]))
@@ -86,17 +129,11 @@ def __loop(n_s, T):
 
 def calibrate(barometer_drift=1, calibration_drift=0.25):
     altitude.find_floor_from_range(10, True)
-    altitude.barometer_drift = barometer_drift
-    altitude.calibration_drift = calibration_drift
 
 
-def start(velocity_setpoint=0, tolerance=50, n_s=5, T=1000):
-    global setpoint
+def start(n_s=5, T=1000):
     global enable
-    global bangbang_tolerance
     global loop
-    bangbang_tolerance = tolerance
-    setpoint = velocity_setpoint
     enable = True
     T_adjusted = T - _ALTITUDE_SAMPLING_TIME_BUDGET  # this is in ms
     try:
