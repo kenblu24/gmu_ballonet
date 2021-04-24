@@ -13,7 +13,7 @@ import ustruct
 import utime
 import time
 
-_IO_TIMEOUT = 1000
+_IO_TIMEOUT = 2000
 _SYSRANGE_START = const(0x00)
 _EXTSUP_HV = const(0x89)
 _MSRC_CONFIG = const(0x60)

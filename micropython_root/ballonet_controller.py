@@ -109,6 +109,7 @@ def __loop(n_s, T):
         # convert velocity from weird units to mm/s
         velocity = int(velocity * 1000 * 1000 / (sum(t[-n_s:]) / 1000))
         fix_push(history['velocity'], velocity)
+
         if h[-1] < cfg['floor_height']:
             setpoint += 50
         elif h[-1] > cfg['ceiling_height']:
@@ -136,12 +137,7 @@ def start(n_s=5, T=1000):
     global loop
     enable = True
     T_adjusted = T - _ALTITUDE_SAMPLING_TIME_BUDGET  # this is in ms
-    try:
-        loop = _thread.start_new_thread(__loop, (n_s, T_adjusted / 1000))
-        while True:
-            sleep(10)
-    except KeyboardInterrupt:
-        stop()
+    loop = _thread.start_new_thread(__loop, (n_s, T_adjusted / 1000))
 
 
 def stop():
